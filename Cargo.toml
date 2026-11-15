@@ -1,0 +1,12 @@
+[workspace]
+resolver = "2"
+members = ["crates/p2p-core", "crates/p2p-cli"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+repository = "https://github.com/Dioman-Keita/p2p"
+
+[workspace.dependencies]
+p2p-core = { path = "crates/p2p-core" }
+thiserror = "2"

@@ -1,0 +1,9 @@
+[package]
+name = "p2p-core"
+description = "Transfer engine: pairing, sending and receiving files between two peers."
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+
+[dependencies]
+thiserror.workspace = true

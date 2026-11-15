@@ -1,0 +1,13 @@
+[package]
+name = "p2p-cli"
+description = "Command-line front-end for p2p-core (headless use and end-to-end testing)."
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "p2p"
+path = "src/main.rs"
+
+[dependencies]
+p2p-core.workspace = true
