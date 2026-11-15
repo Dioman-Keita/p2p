@@ -59,8 +59,10 @@ export class ReceivePanel {
     const state = this.state();
     if (state.step !== 'offer') return;
     await this.p2p.rejectOffer(state.offer.offerId);
-    // Accept may have won the race meanwhile: never discard a transfer that is now running.
-    if (this.state() === state) this.reset();
+    // Reset only if this offer is still displayed (a destination may have been picked meanwhile).
+    // If Accept won the race, a transfer is now running and must not be discarded.
+    const current = this.state();
+    if (current.step === 'offer' && current.offer.offerId === state.offer.offerId) this.reset();
   }
 
   async accept(): Promise<void> {

@@ -133,4 +133,18 @@ describe('ReceivePanel', () => {
     expect(el.textContent).toContain('Receiving');
     expect(el.textContent).not.toContain('stale');
   });
+
+  it('still resets after a reject when a destination was picked meanwhile', async () => {
+    let finishReject: () => void = () => {};
+    const { panel, fixture, el } = setup({
+      rejectOffer: vi.fn(() => new Promise<void>((resolve) => (finishReject = resolve))),
+    });
+    await panel.connect();
+    const rejecting = panel.reject();
+    await panel.chooseDestination();
+    finishReject();
+    await rejecting;
+    await fixture.whenStable();
+    expect(el.textContent).toContain('Paste the ticket');
+  });
 });
