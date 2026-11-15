@@ -29,6 +29,8 @@ export class ReceivePanel {
   private readonly p2p = inject(P2pService);
 
   protected ticket = '';
+  /** Identifies the latest accept, so late responses or events of an older one are ignored. */
+  private acceptSeq = 0;
   protected readonly state = signal<ReceiveState>({ step: 'idle' });
   protected readonly error = signal<string | null>(null);
 
@@ -57,12 +59,14 @@ export class ReceivePanel {
     const state = this.state();
     if (state.step !== 'offer') return;
     await this.p2p.rejectOffer(state.offer.offerId);
-    this.reset();
+    // Accept may have won the race meanwhile: never discard a transfer that is now running.
+    if (this.state() === state) this.reset();
   }
 
   async accept(): Promise<void> {
     const state = this.state();
     if (state.step !== 'offer' || !state.destination) return;
+    const seq = ++this.acceptSeq;
     this.state.set({
       step: 'transferring',
       transferId: null,
@@ -74,11 +78,14 @@ export class ReceivePanel {
       const transferId = await this.p2p.acceptOffer(
         state.offer.offerId,
         state.destination,
-        (event) => this.onEvent(event),
+        (event) => {
+          if (seq === this.acceptSeq) this.onEvent(event);
+        },
       );
+      if (seq !== this.acceptSeq) return;
       this.state.update((s) => (s.step === 'transferring' ? { ...s, transferId } : s));
     } catch (err) {
-      this.fail(err);
+      if (seq === this.acceptSeq) this.fail(err);
     }
   }
 

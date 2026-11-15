@@ -88,4 +88,49 @@ describe('ReceivePanel', () => {
     await fixture.whenStable();
     expect(el.querySelector('[role=alert]')?.textContent).toContain('invalid ticket');
   });
+
+  it('keeps a running transfer when a pending reject resolves late', async () => {
+    let finishReject: () => void = () => {};
+    const { panel, fixture, el } = setup({
+      rejectOffer: vi.fn(() => new Promise<void>((resolve) => (finishReject = resolve))),
+    });
+    await panel.connect();
+    await panel.chooseDestination();
+    const rejecting = panel.reject();
+    await panel.accept();
+    finishReject();
+    await rejecting;
+    await fixture.whenStable();
+    expect(el.textContent).toContain('Receiving');
+  });
+
+  it('ignores the late response and events of a previous accept', async () => {
+    const pending: Array<{ resolve: (id: number) => void; onEvent: (e: TransferEvent) => void }> =
+      [];
+    const { panel, fixture, el, p2p } = setup({
+      acceptOffer: vi.fn(
+        (_id: number, _dest: string, onEvent: (e: TransferEvent) => void) =>
+          new Promise<number>((resolve) => pending.push({ resolve, onEvent })),
+      ),
+    });
+    // First accept stays pending; its transfer fails and the user starts over.
+    await panel.connect();
+    await panel.chooseDestination();
+    void panel.accept();
+    pending[0].onEvent({ kind: 'failed', reason: 'connection lost' });
+    await panel.connect();
+    await panel.chooseDestination();
+    void panel.accept();
+
+    pending[0].resolve(1); // late response of the first accept
+    pending[0].onEvent({ kind: 'completed', files: ['stale'] });
+    pending[1].resolve(2);
+    await new Promise((resolve) => setTimeout(resolve)); // let both accept() calls resume
+    await fixture.whenStable();
+    await panel.cancel();
+
+    expect(p2p.cancelTransfer).toHaveBeenCalledWith(2);
+    expect(el.textContent).toContain('Receiving');
+    expect(el.textContent).not.toContain('stale');
+  });
 });

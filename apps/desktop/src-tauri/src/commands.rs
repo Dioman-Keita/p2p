@@ -3,7 +3,7 @@
 use std::path::PathBuf;
 
 use p2p_core::Ticket;
-use tauri::{ipc::Channel, AppHandle, Manager, State};
+use tauri::{ipc::Channel, State};
 
 use crate::{dto, state::AppState};
 
@@ -53,9 +53,11 @@ pub fn reject_offer(state: State<'_, AppState>, offer_id: u64) {
 }
 
 /// Starts the download and streams its events on `on_event`. Returns the transfer id.
+///
+/// Must be `async`: Tauri runs synchronous commands outside the Tokio runtime, and accepting
+/// spawns the transfer task on it.
 #[tauri::command]
-pub fn accept_offer(
-    app: AppHandle,
+pub async fn accept_offer(
     state: State<'_, AppState>,
     offer_id: u64,
     destination: PathBuf,
@@ -66,18 +68,19 @@ pub fn accept_offer(
         .ok_or_else(|| "this offer is no longer available".to_owned())?;
     let mut transfer = offer.accept(destination);
     let id = transfer.id().0;
-    state.track_transfer(id, transfer.cancel_handle());
+    let transfers = state.transfers();
+    transfers.track(id, transfer.cancel_handle());
     tauri::async_runtime::spawn(async move {
         while let Some(event) = transfer.next_event().await {
             // The window may be gone; the transfer still runs to its end.
             let _ = on_event.send(event.into());
         }
-        app.state::<AppState>().untrack_transfer(id);
+        transfers.untrack(id);
     });
     Ok(id)
 }
 
 #[tauri::command]
 pub fn cancel_transfer(state: State<'_, AppState>, transfer_id: u64) {
-    state.cancel_transfer(transfer_id);
+    state.transfers().cancel(transfer_id);
 }

@@ -61,7 +61,14 @@ jobs:
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
       - name: TypeScript bindings are up to date
-        run: git diff --exit-code -- apps/desktop/ui/src/app/core/bindings
+        shell: bash
+        run: |
+          changes=$(git status --porcelain --untracked-files=all -- apps/desktop/ui/src/app/core/bindings)
+          if [ -n "$changes" ]; then
+            echo "Generated bindings differ from the committed ones. Run 'cargo test -p p2p-desktop' and commit:"
+            echo "$changes"
+            exit 1
+          fi
 
   windows-installer:
     name: Windows installer
@@ -76,14 +83,12 @@ jobs:
           cache-dependency-path: apps/desktop/ui/package-lock.json
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: Install UI dependencies
-        working-directory: apps/desktop/ui
-        run: npm ci
       # Builds the UI (beforeBuildCommand), the release binary, then the MSI and NSIS installers.
       - name: Build installers
-        working-directory: apps/desktop/src-tauri
-        shell: bash
-        run: ../ui/node_modules/.bin/tauri build
+        working-directory: apps/desktop/ui
+        run: |
+          npm ci
+          npm run tauri -- build
       - uses: actions/upload-artifact@v4
         with:
           name: p2p-windows-installers

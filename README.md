@@ -32,7 +32,7 @@ Download them from the run's **p2p-windows-installers** artifact.
 
 ## Development
 
-Prerequisites: Rust (stable), Node.js 22+, and on Windows the WebView2 runtime (preinstalled on Windows 10/11).
+Prerequisites: Rust (stable), Node.js `^22.22.3 || ^24.15.0 || >=26.0.0` (required by Angular 22), and on Windows the WebView2 runtime (preinstalled on Windows 10/11).
 On Linux, also install the [Tauri system dependencies](https://v2.tauri.app/start/prerequisites/).
 
 ```bash
@@ -45,14 +45,14 @@ The Rust workspace embeds the built UI, so build it once before compiling.
 ### Desktop app
 
 ```bash
-cd apps/desktop/src-tauri
+cd apps/desktop/ui
 ```
 ```bash
-../ui/node_modules/.bin/tauri dev
+npm run tauri dev
 ```
 
-`tauri dev` starts the Angular dev server with hot reload and opens the app.
-`tauri build` produces the installers in `target/release/bundle/`.
+`npm run tauri dev` starts the Angular dev server with hot reload and opens the app.
+`npm run tauri build` produces the installers in `target/release/bundle/`.
 
 UI tests run with `npm test` in `apps/desktop/ui`.
 
