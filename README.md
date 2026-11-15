@@ -31,7 +31,22 @@ Prerequisites: Rust (stable), Node.js 22+, and on Windows the WebView2 runtime (
 
 ```bash
 cargo test --workspace
-cargo run -p p2p-cli
 ```
+
+### Try it with the CLI
+
+On the sending PC:
+
+```bash
+cargo run -p p2p-cli -- send <file-or-folder>...
+```
+
+It prints a ticket. On the receiving PC:
+
+```bash
+cargo run -p p2p-cli -- receive <ticket> --dest <folder>
+```
+
+Add `--direct 0.0.0.0:0` on both sides to disable relays and connect only over the local network.
 
 See [docs/architecture.md](docs/architecture.md) for the design.

@@ -42,12 +42,43 @@ so the architecture stays deliberately small: one engine library and thin front-
 
 | Module    | Responsibility |
 |-----------|----------------|
-| `node`    | Start/stop the iroh endpoint; holds the node's key pair. |
-| `ticket`  | Encode/decode the token exchanged between peers. |
-| `send`    | Import files/folders, publish them, produce a `Ticket`. |
-| `receive` | Connect with a `Ticket`, present the offer, download and verify. |
-| `event`   | `TransferEvent` and related types consumed by front-ends. |
+| `node`    | `Node`: starts/stops the iroh endpoint and the blob store. |
+| `share`   | `Node::share`: imports files/folders (referenced in place, not copied) as a collection and returns a `Share` with its `Ticket`. |
+| `receive` | `Node::fetch_offer` → `Offer` (file list with verified sizes) → `accept` → `Transfer` (events, cancel). |
+| `access`  | Gatekeeper: the node only serves content of active shares. |
+| `paths`   | Validates file names received from the network and avoids overwriting existing files. |
+| `ticket`  | `Ticket`: the token exchanged between peers. |
+| `event`   | `TransferEvent` and `FileEntry`, consumed by front-ends. |
 | `error`   | The single `Error` type of the public API. |
+
+### Transfer flow
+
+```
+Sender                                   Receiver
+share(paths) ──► Ticket ── (copy/QR) ──► fetch_offer(ticket)
+                                          │  downloads the file list + verified sizes only
+                                          ▼
+                                         Offer ──► reject()  (connection closed)
+                                          │
+                                          ▼ accept(dest)
+serves blobs (if still shared) ◄──────── Transfer: Progress… → Writing → Completed | Failed | Cancelled
+```
+
+- Shared content lives in an `iroh-blobs` file store under `<data_dir>/store`, wiped on start.
+  Shares therefore do not survive a restart. Sent files are referenced in place.
+  Received data is moved out of the store into the destination when possible, so it does not take twice the disk space.
+- Everything received is BLAKE3-verified before it is written to the destination.
+
+### Security notes
+
+- Connections are end-to-end encrypted and authenticated by the peers' public keys (QUIC / TLS 1.3).
+- A ticket is a **bearer token**: anyone holding it can download the share while it is active.
+  `Node::unshare` revokes it immediately.
+- Only content of active shares is served: every request is checked against the share registry.
+  Requests that fetch many arbitrary hashes in one go are disabled.
+- File names from the peer are untrusted. Absolute paths, `..`, drive prefixes, Windows reserved
+  names (`CON`, `NUL`…) and invalid characters are rejected. Files are never overwritten (`name (1).ext`).
+- Before acceptance, the receiver downloads at most the file list, and its size is capped.
 
 ### Desktop app (`apps/desktop`)
 

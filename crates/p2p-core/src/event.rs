@@ -1,39 +1,45 @@
 use std::path::PathBuf;
 
-/// Opaque identifier of a transfer, unique within a running node.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Identifier of a transfer, unique within a running [`crate::Node`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct TransferId(pub u64);
 
-/// Everything a front-end needs to render a transfer's lifecycle.
+/// A file that is part of a share or an offer.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FileEntry {
+    /// Path relative to the shared root, always using `/` as separator.
+    pub name: String,
+    pub size: u64,
+}
+
+/// Lifecycle of an accepted transfer, as seen by the receiver.
+///
+/// A transfer always ends with exactly one of `Completed`, `Failed` or `Cancelled`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TransferEvent {
-    /// A peer offers files; the receiver must accept or reject.
-    Offered {
-        id: TransferId,
-        files: Vec<FileEntry>,
-        total_bytes: u64,
-    },
-    Started {
-        id: TransferId,
-    },
+    /// Verified payload bytes received so far.
     Progress {
-        id: TransferId,
         bytes_done: u64,
         total_bytes: u64,
     },
+    /// All data is received and verified; files are being written to the destination.
+    Writing,
+    /// Files were written. Paths are absolute and may differ from the offered names
+    /// when a file with the same name already existed.
     Completed {
-        id: TransferId,
-        destination: Option<PathBuf>,
+        files: Vec<PathBuf>,
     },
     Failed {
-        id: TransferId,
         reason: String,
     },
+    Cancelled,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FileEntry {
-    /// Path relative to the shared root, using `/` separators.
-    pub relative_path: String,
-    pub size: u64,
+impl TransferEvent {
+    pub fn is_terminal(&self) -> bool {
+        matches!(
+            self,
+            Self::Completed { .. } | Self::Failed { .. } | Self::Cancelled
+        )
+    }
 }
