@@ -1,0 +1,51 @@
+@if (share(); as share) {
+  <section class="card">
+    <h2>Sharing {{ share.files.length }} file(s) · {{ share.totalBytes | fileSize }}</h2>
+    <p class="hint">
+      Give this ticket to the other PC. Keep this window open until the download is done.
+    </p>
+    <textarea
+      class="ticket"
+      readonly
+      rows="4"
+      [value]="share.ticket"
+      aria-label="Ticket"
+    ></textarea>
+    <div class="actions">
+      <button class="primary" (click)="copyTicket()">
+        {{ copied() ? 'Copied' : 'Copy ticket' }}
+      </button>
+      <button (click)="stopSharing()">Stop sharing</button>
+    </div>
+  </section>
+} @else {
+  <section class="card">
+    <h2>Choose what to send</h2>
+    <div class="actions">
+      <button (click)="addFiles()">Add files</button>
+      <button (click)="addFolders()">Add folders</button>
+    </div>
+    @if (selection().length > 0) {
+      <ul class="files">
+        @for (path of selection(); track path) {
+          <li>
+            <span class="name" [title]="path">{{ path }}</span>
+            <button class="link" (click)="remove(path)" [attr.aria-label]="'Remove ' + path">
+              Remove
+            </button>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="hint">No files selected yet.</p>
+    }
+    <div class="actions">
+      <button class="primary" [disabled]="!canShare()" (click)="startSharing()">
+        {{ busy() ? 'Preparing…' : 'Share' }}
+      </button>
+    </div>
+  </section>
+}
+@if (error(); as error) {
+  <p class="error" role="alert">{{ error }}</p>
+}

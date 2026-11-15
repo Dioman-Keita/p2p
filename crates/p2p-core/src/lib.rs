@@ -23,6 +23,6 @@ mod ticket;
 pub use error::{Error, Result};
 pub use event::{FileEntry, TransferEvent, TransferId};
 pub use node::{Network, Node, NodeConfig};
-pub use receive::{Offer, Transfer};
+pub use receive::{CancelHandle, Offer, Transfer};
 pub use share::Share;
 pub use ticket::Ticket;

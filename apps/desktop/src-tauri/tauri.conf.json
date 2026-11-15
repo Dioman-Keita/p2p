@@ -1,0 +1,31 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "p2p",
+  "identifier": "io.github.diomankeita.p2p",
+  "build": {
+    "beforeDevCommand": { "script": "npm run start", "cwd": "../ui" },
+    "beforeBuildCommand": { "script": "npm run build", "cwd": "../ui" },
+    "devUrl": "http://localhost:4200",
+    "frontendDist": "../ui/dist/ui/browser"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "p2p",
+        "width": 720,
+        "height": 640,
+        "minWidth": 480,
+        "minHeight": 480
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["msi", "nsis"],
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"]
+  }
+}

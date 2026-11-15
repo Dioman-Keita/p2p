@@ -92,7 +92,7 @@ async fn receive(node: &Node, ticket: &Ticket, dest: PathBuf, yes: bool) -> p2p_
     }
 
     let mut transfer = offer.accept(dest);
-    let cancel = transfer.cancel_token();
+    let cancel = transfer.cancel_handle();
     tokio::spawn(async move {
         if tokio::signal::ctrl_c().await.is_ok() {
             cancel.cancel();

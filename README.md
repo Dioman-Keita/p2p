@@ -25,13 +25,39 @@ docs/
   adr/          Architecture Decision Records
 ```
 
+## Download
+
+Every CI run on GitHub Actions builds the Windows installers (`.msi` and `.exe`).
+Download them from the run's **p2p-windows-installers** artifact.
+
 ## Development
 
 Prerequisites: Rust (stable), Node.js 22+, and on Windows the WebView2 runtime (preinstalled on Windows 10/11).
+On Linux, also install the [Tauri system dependencies](https://v2.tauri.app/start/prerequisites/).
 
 ```bash
+cd apps/desktop/ui && npm ci && npm run build && cd ../../..
 cargo test --workspace
 ```
+
+The Rust workspace embeds the built UI, so build it once before compiling.
+
+### Desktop app
+
+```bash
+cd apps/desktop/src-tauri
+```
+```bash
+../ui/node_modules/.bin/tauri dev
+```
+
+`tauri dev` starts the Angular dev server with hot reload and opens the app.
+`tauri build` produces the installers in `target/release/bundle/`.
+
+UI tests run with `npm test` in `apps/desktop/ui`.
+
+After changing a type in `apps/desktop/src-tauri/src/dto.rs`, run `cargo test -p p2p-desktop` to regenerate the
+TypeScript bindings in `apps/desktop/ui/src/app/core/bindings/`. CI fails when they are out of date.
 
 ### Try it with the CLI
 
