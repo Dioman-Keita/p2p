@@ -87,14 +87,18 @@ fn share_fetch_accept_through_ipc() {
     .unwrap();
     assert!(transfer_id.as_u64().is_some());
 
+    // Wait for the complete contents: the file may exist before it is fully written.
     let received = dest.join("hello.txt");
+    let expected = b"hello from the other PC";
+    let mut contents = std::fs::read(&received).unwrap_or_default();
     for _ in 0..100 {
-        if received.exists() {
+        if contents == expected {
             break;
         }
         std::thread::sleep(Duration::from_millis(50));
+        contents = std::fs::read(&received).unwrap_or_default();
     }
-    assert_eq!(std::fs::read(received).unwrap(), b"hello from the other PC");
+    assert_eq!(contents, expected);
 
     // The offer was consumed by accept.
     let again = invoke(

@@ -124,8 +124,12 @@ describe('ReceivePanel', () => {
 
     pending[0].resolve(1); // late response of the first accept
     pending[0].onEvent({ kind: 'completed', files: ['stale'] });
+    await new Promise((resolve) => setTimeout(resolve)); // let the stale accept resume
+    await panel.cancel();
+    expect(p2p.cancelTransfer).not.toHaveBeenCalled(); // the current transfer has no id yet
+
     pending[1].resolve(2);
-    await new Promise((resolve) => setTimeout(resolve)); // let both accept() calls resume
+    await new Promise((resolve) => setTimeout(resolve)); // let the current accept resume
     await fixture.whenStable();
     await panel.cancel();
 
