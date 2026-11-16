@@ -1,0 +1,3 @@
+[env]
+# Where ts-rs writes the TypeScript bindings of the desktop app (`cargo test -p p2p-desktop`).
+TS_RS_EXPORT_DIR = { value = "apps/desktop/ui/src/app/core/bindings", relative = true }

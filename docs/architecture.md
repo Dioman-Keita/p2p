@@ -82,20 +82,35 @@ serves blobs (if still shared) ◄──────── Transfer: Progress…
 
 ### Desktop app (`apps/desktop`)
 
-- `src-tauri/`: Tauri commands (`share`, `receive`, `accept`, `reject`, `cancel`) that call `p2p-core`
-  and forward `TransferEvent`s to the UI as Tauri events. No logic beyond mapping.
-- `ui/`: Angular (standalone components, signals). It uses a flat, feature-based layout
-  and not a layered methodology such as FSD, because the app has only a few screens:
+**`src-tauri/`** (Rust) is a thin adapter over `p2p-core`. It contains no transfer logic.
+
+| File          | Role |
+|---------------|------|
+| `lib.rs`      | Starts the `Node` (data in the OS app-local data dir) and registers the commands. Shuts the node down on exit. |
+| `commands.rs` | `share`, `unshare`, `fetch_offer`, `reject_offer`, `accept_offer`, `cancel_transfer`. |
+| `state.rs`    | Pending offers (between `fetch_offer` and accept/reject) and the cancel handles of running transfers. |
+| `dto.rs`      | Serializable types sent to the UI. TypeScript definitions are generated from them. |
+
+Transfer events reach the UI through a Tauri `Channel` passed to `accept_offer`, which is ordered and scoped to one transfer.
+Errors reach the UI as plain messages.
+
+**`ui/`** (Angular, standalone components, signals, zoneless) uses a flat, feature-based layout.
+It does not use a layered methodology such as FSD, because the app has only a few screens:
 
 ```
 ui/src/app/
-  core/       TauriBridge service: typed wrappers over invoke() and event listeners
-  send/       pick files, show ticket / QR, progress
-  receive/    paste ticket, review offer, accept, progress
-  shared/     reusable presentational components and pipes (file size, ETA)
+  core/
+    p2p.service.ts   typed wrapper over invoke(), channels and file dialogs; the only place that knows Tauri
+    bindings/        generated from src-tauri/src/dto.rs (do not edit)
+  send/              pick files and folders, share, show and copy the ticket, stop sharing
+  receive/           paste ticket → review offer → choose folder → accept/reject → progress → done
+  shared/            fileSize pipe
 ```
 
-TypeScript types for commands and events are generated from the Rust types, so the two sides cannot drift apart.
+Components depend only on `P2pService`. Their tests swap it for a fake, so they run without Tauri.
+The receive flow is a discriminated-union state (`idle | connecting | offer | transferring | done`) held in one signal.
+
+TypeScript types are generated from the Rust DTOs with `ts-rs`, and CI checks they are up to date, so the two sides cannot drift apart.
 
 ## Scope
 

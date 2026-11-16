@@ -1,0 +1,67 @@
+@let s = state();
+@if (s.step === 'idle') {
+  <section class="card">
+    <h2>Receive files</h2>
+    <p class="hint">Paste the ticket shown on the sending PC.</p>
+    <textarea
+      class="ticket"
+      rows="4"
+      [(ngModel)]="ticket"
+      placeholder="blob…"
+      aria-label="Ticket"
+    ></textarea>
+    <div class="actions">
+      <button class="primary" [disabled]="!ticket.trim()" (click)="connect()">Connect</button>
+    </div>
+  </section>
+} @else if (s.step === 'connecting') {
+  <section class="card"><p>Connecting to the other PC…</p></section>
+} @else if (s.step === 'offer') {
+  <section class="card">
+    <h2>{{ s.offer.files.length }} file(s) · {{ s.offer.totalBytes | fileSize }}</h2>
+    <ul class="files">
+      @for (file of s.offer.files; track file.name) {
+        <li>
+          <span class="name" [title]="file.name">{{ file.name }}</span><span>{{
+            file.size | fileSize
+          }}</span>
+        </li>
+      }
+    </ul>
+    <div class="destination">
+      <span class="name">{{ s.destination ?? 'No destination folder selected' }}</span>
+      <button (click)="chooseDestination()">Choose folder</button>
+    </div>
+    <div class="actions">
+      <button class="primary" [disabled]="!s.destination" (click)="accept()">Accept</button>
+      <button (click)="reject()">Reject</button>
+    </div>
+  </section>
+} @else if (s.step === 'transferring') {
+  <section class="card">
+    <h2>{{ s.writing ? 'Writing files…' : 'Receiving…' }}</h2>
+    <progress [value]="s.bytesDone" [max]="s.totalBytes || 1"></progress>
+    <p>
+      {{ percent(s.bytesDone, s.totalBytes) }}% · {{ s.bytesDone | fileSize }} /
+      {{ s.totalBytes | fileSize }}
+    </p>
+    <div class="actions">
+      <button [disabled]="s.writing || s.transferId === null" (click)="cancel()">Cancel</button>
+    </div>
+  </section>
+} @else {
+  <section class="card">
+    <h2>Done</h2>
+    <ul class="files">
+      @for (file of s.files; track file) {
+        <li>
+          <span class="name" [title]="file">{{ file }}</span>
+        </li>
+      }
+    </ul>
+    <div class="actions"><button class="primary" (click)="reset()">Receive more</button></div>
+  </section>
+}
+@if (error(); as error) {
+  <p class="error" role="alert">{{ error }}</p>
+}

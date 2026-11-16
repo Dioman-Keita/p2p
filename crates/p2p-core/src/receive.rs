@@ -188,6 +188,16 @@ impl Offer {
     }
 }
 
+/// Cancels a [`Transfer`] from anywhere. Cheap to clone.
+#[derive(Debug, Clone)]
+pub struct CancelHandle(CancellationToken);
+
+impl CancelHandle {
+    pub fn cancel(&self) {
+        self.0.cancel();
+    }
+}
+
 /// Handle on an accepted transfer.
 #[derive(Debug)]
 pub struct Transfer {
@@ -206,9 +216,9 @@ impl Transfer {
         self.events.recv().await
     }
 
-    /// A token that cancels this transfer; can be moved to another task.
-    pub fn cancel_token(&self) -> CancellationToken {
-        self.cancel.clone()
+    /// A handle that cancels this transfer; can be moved to another task.
+    pub fn cancel_handle(&self) -> CancelHandle {
+        CancelHandle(self.cancel.clone())
     }
 
     pub fn cancel(&self) {
