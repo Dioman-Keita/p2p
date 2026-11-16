@@ -34,6 +34,12 @@ fn app_window(node: Node) -> WebviewWindow<MockRuntime> {
         .unwrap()
 }
 
+/// Origin of the app's own pages: permissions only grant app commands to it.
+#[cfg(windows)]
+const APP_ORIGIN: &str = "http://tauri.localhost";
+#[cfg(not(windows))]
+const APP_ORIGIN: &str = "tauri://localhost";
+
 fn invoke(window: &WebviewWindow<MockRuntime>, cmd: &str, args: Value) -> Result<Value, Value> {
     get_ipc_response(
         window,
@@ -41,7 +47,7 @@ fn invoke(window: &WebviewWindow<MockRuntime>, cmd: &str, args: Value) -> Result
             cmd: cmd.into(),
             callback: CallbackFn(0),
             error: CallbackFn(1),
-            url: "tauri://localhost".parse().unwrap(),
+            url: APP_ORIGIN.parse().unwrap(),
             body: InvokeBody::Json(args),
             headers: Default::default(),
             invoke_key: INVOKE_KEY.into(),
@@ -105,5 +111,6 @@ fn invalid_ticket_is_reported_as_a_message() {
     let tmp = tempfile::tempdir().unwrap();
     let window = app_window(spawn_node(&rt, tmp.path()));
     let err = invoke(&window, "fetch_offer", json!({ "ticket": "nope" })).unwrap_err();
-    assert!(err.as_str().unwrap().starts_with("invalid ticket"));
+    let msg = err.as_str().unwrap();
+    assert!(msg.starts_with("invalid ticket"), "unexpected error: {msg}");
 }
